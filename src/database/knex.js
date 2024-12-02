@@ -1,13 +1,13 @@
 import knex from 'knex'
-import { database } from '../config/index.config.js'
+import { config } from '../config/index.config.js'
 
 export const db = knex({
     client: 'pg',
     connection: {
-        host: database.host,
-        port: database.port,
-        user: database.user,
-        password: database.password,
-        database: database.database,
+        host: config.database.host,
+        port: config.database.port,
+        user: config.database.user,
+        password: config.database.password,
+        database: config.database.database,
     },
 })

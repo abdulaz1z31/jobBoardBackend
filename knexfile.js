@@ -1,23 +1,20 @@
-// Update with your config settings.
+/**
+ * @type { Object.<string, import("knex").Knex.Config> }
+ */
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
-// Update with your config settings.
-
-/**
- * @type { Object.<string, import("knex").Knex.Config> }
- */
-import { database } from './src/config/index.config.js'
+import { config } from './src/config/index.config.js'
 export default {
     development: {
         client: 'pg',
         connection: {
-            host: database.host,
-            port: database.port,
-            user: database.user,
-            password: database.password,
-            database: database.database,
+            host: config.database.host,
+            port: config.database.port,
+            user: config.database.user,
+            password: config.database.password,
+            database: config.database.database,
         },
     },
 

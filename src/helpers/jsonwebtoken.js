@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken'
-import { jwtKey } from '../config/index.config.js'
+import { config } from '../config/index.config.js'
 
 export const createTokens = async (payload) => {
-    const accessToken = jwt.sign(payload, jwtKey.accessSecret, {
-        expiresIn: jwtKey.accessTime,
+    const accessToken = jwt.sign(payload, config.jwtKey.accessSecret, {
+        expiresIn: config.jwtKey.accessTime,
     })
-    const refreshToken = jwt.sign(payload, jwtKey.refreshSecret, {
-        expiresIn: jwtKey.refreshTime,
+    const refreshToken = jwt.sign(payload, config.jwtKey.refreshSecret, {
+        expiresIn: config.jwtKey.refreshTime,
     })
     return { accessToken, refreshToken }
 }
@@ -14,7 +14,7 @@ export const createTokens = async (payload) => {
 export const verifyTokens = (type, token) => {
     const data = jwt.verify(
         token,
-        type == 'access' ? jwtKey.accessSecret : jwtKey.refreshSecret,
+        type == 'access' ? config.jwtKey.accessSecret : config.jwtKey.refreshSecret,
     )
     return data
 }
