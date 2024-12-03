@@ -23,7 +23,7 @@ export const registerUser = async (req, res, next) => {
         }
         return res.status(statusCode.CONFLICT).send({
             message: 'Fail',
-            error: error.message,
+            error: error,
         })
     } catch (error) {
         next(error)
