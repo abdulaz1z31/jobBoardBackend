@@ -84,7 +84,6 @@ export const updateIdCompanyController = async (req, res, next) => {
             req.params.id,
             req.body,
         )
-        console.log(currentComany)
         if (!currentComany) {
             return res.status(404).send('Not found!!!')
         }

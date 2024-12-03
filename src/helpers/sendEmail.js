@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { config } from '../config/index.config.js'
+import { logger } from '../utils/logger.utils.js'
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -19,9 +20,9 @@ export const sendMail = async (to, subject, html) => {
         },
         function (error, info) {
             if (error) {
-                console.log(error)
+                logger.error(error)
             } else {
-                console.log('Email sent: ' + info.response)
+                logger.info('Email sent: ' + info.response)
             }
         },
     )

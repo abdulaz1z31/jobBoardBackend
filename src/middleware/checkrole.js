@@ -1,3 +1,4 @@
+import { db } from '../database/knex.js'
 import { logger } from '../utils/index.utils.js'
 import { getByICompanyService } from '../service/index.service.js'
 export const roleGuard = (...roles) => {
@@ -47,11 +48,11 @@ export const adminOrSelf = (...roles) => {
             const id = req.params.id
             const userId = req.user?.id
             if (roles.includes(userRole) || id == userId) {
-                if (userRole != 'admin') {
+                if (userRole != 'admin' || userRole != 'superAdmin') {
                     req.body.role = userRole
                 }
                 next()
-            } else {
+            } else {  
                 logger.error('Permission Denied')
                 res.status(403).send('Permission Denied')
             }
@@ -64,3 +65,22 @@ export const adminOrSelf = (...roles) => {
         }
     }
 }
+export const isSuperAdmin = async (req, res, next)=> {
+    try {
+        const user_id = req.params.id
+        const user = await db('users').select('*').where('id', user_id)
+        if (user.length == 0) {
+            throw new Error("user not found");
+        }
+        const role = user[0].role
+        if (role == 'superAdmin' && user_id != req.user.id) {
+            res.status(403).send({
+                message:"You do not have access"
+            })
+        } else {
+            next()
+        }
+    } catch (error) {
+        next(error)
+    }
+} 

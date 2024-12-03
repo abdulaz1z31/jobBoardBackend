@@ -196,6 +196,33 @@ export const changePasswordService = async (userData, body) => {
         return {success:true, error}
     }
 }
+//admin fuctions
+export const createAdminService = async (data) => {
+    try {
+        data.role = 'admin'
+        const hashPassword = await generateHashPassword(data.password)
+        data.password = hashPassword
+        data.status = 'active'
+        const admin = await db('users').insert(data).returning('*')
+        
+        
+        if (admin.length == 0) {
+            throw new Error("Error while creating admin");
+        }
+        delete admin[0].password
+        return {success:true, admin}
+    } catch (error) {
+        return {success:false, error}
+    }
+}
+export const deleteAdminService = async (userId) => {
+    try {
+        await db('users').where('id', userId).del()
+        return {success:true}
+    } catch (error) {
+        return {success:false, error}
+    }
+}
 //user functions
 export const getAllUsersService = async ({ limit, skip }) => {
     try {
@@ -321,8 +348,6 @@ const isActive = async (userId) => {
         if (user.length < 1) {
             throw new Error('User not found')
         }
-        console.log(user);
-        
         if (user[0].status == 'active') {
             return { isActive: true }
         }

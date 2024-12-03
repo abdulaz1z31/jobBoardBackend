@@ -30,8 +30,6 @@ export const getByICompanyService = async (id) => {
 export const searchCompanyService = async (query) => {
     try {
         const { name } = query
-        console.log(name)
-
         const companies = await db('companies')
             .select('*')
             .where('name', 'ILIKE', `%${name}%`)
@@ -56,6 +54,11 @@ export const registerCompanyService = async (body, userId) => {
                 throw new Error('Company Registration failed')
             }
             return regsitrationCompany[0].id
+        const data = await db('companies')
+            .insert({ ...body })
+            .returning('*')
+        if (!data[0]) {
+            throw new Error('Error')
         }
         throw new Error('Company already exists')
     } catch (error) {
@@ -78,9 +81,7 @@ export const updateCompanyService = async (id, body) => {
 }
 export const deleteCompanyService = async (id) => {
     try {
-        console.log(id)
         const data = await db('companies').where('id', id).del().returning('*')
-        console.log(data)
         if (!data) {
             throw new Error('Error')
         }
