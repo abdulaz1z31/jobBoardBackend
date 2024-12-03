@@ -20,7 +20,6 @@ export async function up(knex) {
             .unsigned()
             .references('id')
             .inTable('categories')
-            .onDelete('CASCADE')
             .onUpdate('CASCADE')
         table.string('location').notNullable()
         table.json('salaryRange').notNullable()
