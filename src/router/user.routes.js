@@ -16,7 +16,13 @@ import {
 
 export const userRouter = Router()
 
-userRouter.get('/', checkToken, roleGuard('admin', 'superAdmin'), pagination, getAllUsers)
+userRouter.get(
+    '/',
+    checkToken,
+    roleGuard('admin', 'superAdmin'),
+    pagination,
+    getAllUsers,
+)
 userRouter.get(
     '/search',
     checkToken,
@@ -24,6 +30,24 @@ userRouter.get(
     pagination,
     searchUser,
 )
-userRouter.get('/:id', checkToken, adminOrSelf('admin', 'superAdmin'),isSuperAdmin, getUserById)
-userRouter.put('/:id', checkToken, adminOrSelf('admin', 'superAdmin'), isSuperAdmin, updateUserById)
-userRouter.delete('/:id', checkToken, adminOrSelf('admin', 'superAdmin'),isSuperAdmin, deleteUserById)
+userRouter.get(
+    '/:id',
+    checkToken,
+    adminOrSelf('admin', 'superAdmin'),
+    isSuperAdmin,
+    getUserById,
+)
+userRouter.put(
+    '/:id',
+    checkToken,
+    adminOrSelf('admin', 'superAdmin'),
+    isSuperAdmin,
+    updateUserById,
+)
+userRouter.delete(
+    '/:id',
+    checkToken,
+    adminOrSelf('admin', 'superAdmin'),
+    isSuperAdmin,
+    deleteUserById,
+)

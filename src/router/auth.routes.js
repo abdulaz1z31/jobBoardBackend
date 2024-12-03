@@ -32,8 +32,28 @@ authRouter.post('/login', validationMiddleware(loginSchema), loginUser)
 authRouter.get('/me', checkToken, getUserProfile)
 authRouter.get('/logout', checkToken, logOut)
 authRouter.post('/refresh-token', updateToken)
-authRouter.post('/forget/password',validationMiddleware(forgetSchema), checkToken, forgetPassword)
-authRouter.post('/forget/password/change', checkForgetToken, forgetPasswordChange)
+authRouter.post(
+    '/forget/password',
+    validationMiddleware(forgetSchema),
+    checkToken,
+    forgetPassword,
+)
+authRouter.post(
+    '/forget/password/change',
+    checkForgetToken,
+    forgetPasswordChange,
+)
 authRouter.post('/change/password', checkToken, changePassword)
-authRouter.post('/create/admin', checkToken, roleGuard('superAdmin', 'admin'),validationMiddleware(registerSchema), createAdmin)
-authRouter.post('/delete/admin/:id', checkToken, roleGuard('superAdmin'), deleteAdmin)
+authRouter.post(
+    '/create/admin',
+    checkToken,
+    roleGuard('superAdmin', 'admin'),
+    validationMiddleware(registerSchema),
+    createAdmin,
+)
+authRouter.post(
+    '/delete/admin/:id',
+    checkToken,
+    roleGuard('superAdmin'),
+    deleteAdmin,
+)

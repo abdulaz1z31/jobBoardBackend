@@ -14,7 +14,7 @@ export const checkToken = (req, res, next) => {
         const decode = verifyTokens('access', token)
         const status = decode.status
         if (status != 'active') {
-            throw new Error("Account is not active");
+            throw new Error('Account is not active')
         }
         req.user = decode
         next()
@@ -35,10 +35,10 @@ export const checkForgetToken = (req, res, next) => {
         }
         const token = bearerToken.split(' ')[1]
         const decode = verifyForgetToken(token)
-        
+
         const status = decode.status
         if (status != 'active') {
-            throw new Error("Account is not active");
+            throw new Error('Account is not active')
         }
         req.user = decode
         next()

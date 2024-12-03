@@ -50,7 +50,7 @@ export const verifyUserService = async (userData) => {
         const now = new Date()
         const { user_id, otp_code } = userData
         const { isExists, error, otp } = await findOtpById(user_id)
-        
+
         if (!isExists) {
             return { success: false, error }
         }
@@ -58,7 +58,7 @@ export const verifyUserService = async (userData) => {
             throw new Error('Otp is not valid')
         }
         if (now > otp.expires_at) {
-            throw new Error("Otp expired");
+            throw new Error('Otp expired')
         }
         await deleteOtp(user_id)
         const { isUpdated, err } = await updateUserStatus(user_id)
@@ -73,18 +73,19 @@ export const verifyUserService = async (userData) => {
 export const loginUserService = async (userData) => {
     try {
         const { username, password, email } = userData
-        let user;
+        let user
         if (username) {
-            user = await db('users')
-                .select('*')
-                .where('username', username)
+            user = await db('users').select('*').where('username', username)
         } else {
             user = await db('users').select('*').where('email', email)
         }
         if (!user) {
             throw new Error('User not found')
         }
-        const isEqualPassword = await comparePassword(password, user[0].password)
+        const isEqualPassword = await comparePassword(
+            password,
+            user[0].password,
+        )
         if (!isEqualPassword) {
             throw new Error('Username or password not valid')
         }
@@ -99,7 +100,7 @@ export const loginUserService = async (userData) => {
             role: user[0].role,
             status: user[0].status,
         }
-        
+
         const token = await createTokens(payload)
         return { success: true, token }
     } catch (error) {
@@ -111,7 +112,7 @@ export const getUserProfileService = async (userData) => {
         const { username } = userData
 
         const user = await db('users').select('*').where('username', username)
-        
+
         if (!user) {
             throw new Error('User not found')
         }
@@ -132,9 +133,7 @@ export const forgetPasswordService = async (userData) => {
         const { email, username } = userData
         let user
         if (username) {
-            user = await db('users')
-                .select('*')
-                .where('username', username)
+            user = await db('users').select('*').where('username', username)
         } else {
             user = await db('users').select('*').where('email', email)
         }
@@ -175,14 +174,14 @@ export const forgetPasswordChangeService = async (userData, newData) => {
         }
         const hashPassword = await generateHashPassword(newPassword)
         const result = await updateUserPassword(userData.id, hashPassword)
-        
+
         const { isUpdated, error } = result
         if (!isUpdated) {
             return { success: false, error }
         }
         const now = new Date()
         if (now > otpData.expires_at) {
-            throw new Error("Otp is expired");
+            throw new Error('Otp is expired')
         }
         await deleteOtp(userData.id)
         return { success: true }
@@ -194,15 +193,15 @@ export const changePasswordService = async (userData, body) => {
     try {
         const user = await db('users').select('*').where('id', userData.id)
         if (user.length == 0) {
-            throw new Error("User not found");
+            throw new Error('User not found')
         }
         const newPassword = body.password
         const hashPassword = await generateHashPassword(newPassword)
         user[0].password = hashPassword
         await db('users').update(user[0]).where('id', userData.id)
-        return {success:true}
+        return { success: true }
     } catch (error) {
-        return {success:true, error}
+        return { success: true, error }
     }
 }
 //admin fuctions
@@ -213,23 +212,22 @@ export const createAdminService = async (data) => {
         data.password = hashPassword
         data.status = 'active'
         const admin = await db('users').insert(data).returning('*')
-        
-        
+
         if (admin.length == 0) {
-            throw new Error("Error while creating admin");
+            throw new Error('Error while creating admin')
         }
         delete admin[0].password
-        return {success:true, admin}
+        return { success: true, admin }
     } catch (error) {
-        return {success:false, error}
+        return { success: false, error }
     }
 }
 export const deleteAdminService = async (userId) => {
     try {
         await db('users').where('id', userId).del()
-        return {success:true}
+        return { success: true }
     } catch (error) {
-        return {success:false, error}
+        return { success: false, error }
     }
 }
 //user functions
@@ -240,7 +238,7 @@ export const getAllUsersService = async ({ limit, skip }) => {
             throw new Error('Users not found')
         }
         // eslint-disable-next-line prefer-const
-        for(let user of users){
+        for (let user of users) {
             delete user.password
         }
         return { success: true, users }
@@ -311,7 +309,11 @@ export const deleteUserByIdService = async (userId) => {
 const createOtp = async (otp_code, user_id) => {
     const expirationTime = new Date(Date.now() + 2 * 60 * 1000)
     try {
-        await db('otp').insert({ otp_code, user_id, expires_at: expirationTime })
+        await db('otp').insert({
+            otp_code,
+            user_id,
+            expires_at: expirationTime,
+        })
         return { isCreated: true }
     } catch (error) {
         return { isCreated: false, error: error }
@@ -331,7 +333,7 @@ const findOtpById = async (user_id) => {
         if (otp.length == 0) {
             throw new Error('Otp not found')
         }
-        return { isExists: true, otp:otp[0] }
+        return { isExists: true, otp: otp[0] }
     } catch (error) {
         return { isExists: false, error }
     }

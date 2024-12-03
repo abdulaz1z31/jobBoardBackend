@@ -143,15 +143,18 @@ export const forgetPasswordChange = async (req, res, next) => {
 }
 export const changePassword = async (req, res, next) => {
     try {
-        const {success, error} = await changePasswordService(req.user, req.body)
+        const { success, error } = await changePasswordService(
+            req.user,
+            req.body,
+        )
         if (success) {
             return res.status(statusCode.OK).send({
-                message:"Password updated",
+                message: 'Password updated',
             })
         }
         return res.status(statusCode.INTERNAL_SERVER_ERROR).send({
-            message:"fail",
-            error
+            message: 'fail',
+            error,
         })
     } catch (error) {
         next(error)
@@ -159,17 +162,17 @@ export const changePassword = async (req, res, next) => {
 }
 export const createAdmin = async (req, res, next) => {
     try {
-        const {success, error, admin} = await createAdminService(req.body)
-        
+        const { success, error, admin } = await createAdminService(req.body)
+
         if (success) {
             return res.status(statusCode.CREATED).send({
-                message:"Created",
-                admin
+                message: 'Created',
+                admin,
             })
         }
         return res.status(statusCode.INTERNAL_SERVER_ERROR).send({
-            message:"fail",
-            error
+            message: 'fail',
+            error,
         })
     } catch (error) {
         next(error)
@@ -177,15 +180,15 @@ export const createAdmin = async (req, res, next) => {
 }
 export const deleteAdmin = async (req, res, next) => {
     try {
-        const {success, error} = await deleteAdminService(req.param.id)
+        const { success, error } = await deleteAdminService(req.param.id)
         if (success) {
             return res.status(statusCode.OK).send({
-                message:"delete"
+                message: 'delete',
             })
         }
         return res.status(statusCode.INTERNAL_SERVER_ERROR).send({
-            message:"fail",
-            error
+            message: 'fail',
+            error,
         })
     } catch (error) {
         next(error)

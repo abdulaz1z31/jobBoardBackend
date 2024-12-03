@@ -14,7 +14,9 @@ export const createTokens = async (payload) => {
 export const verifyTokens = (type, token) => {
     const data = jwt.verify(
         token,
-        type == 'access' ? config.jwtKey.accessSecret : config.jwtKey.refreshSecret,
+        type == 'access'
+            ? config.jwtKey.accessSecret
+            : config.jwtKey.refreshSecret,
     )
     return data
 }
@@ -27,9 +29,6 @@ export const createForgetToken = async (payload) => {
 }
 
 export const verifyForgetToken = (token) => {
-    const data = jwt.verify(
-        token,
-        config.jwtKey.forgetSecret
-    )
+    const data = jwt.verify(token, config.jwtKey.forgetSecret)
     return data
 }

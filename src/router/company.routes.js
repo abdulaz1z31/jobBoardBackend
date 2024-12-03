@@ -23,7 +23,13 @@ companyRouter.get(
     checkToken,
     getAllCompanyJobsController,
 )
-companyRouter.get('/', checkToken, roleGuard('admin', 'superAdmin'), pagination, getAllCompanyController)
+companyRouter.get(
+    '/',
+    checkToken,
+    roleGuard('admin', 'superAdmin'),
+    pagination,
+    getAllCompanyController,
+)
 companyRouter.get('/search', checkToken, pagination, searchCompanyController)
 companyRouter.get(
     '/:id',
@@ -32,6 +38,15 @@ companyRouter.get(
     getByIdCompanyController,
 )
 companyRouter.post('/', checkToken, createCompanyController)
-companyRouter.put('/:id', checkToken, guardCheck('admin', 'superAdmin'), updateIdCompanyController)
-companyRouter.delete('/:id', checkToken, guardCheck('admin', 'superAdmin'), deleteCompanyController)
-
+companyRouter.put(
+    '/:id',
+    checkToken,
+    guardCheck('admin', 'superAdmin'),
+    updateIdCompanyController,
+)
+companyRouter.delete(
+    '/:id',
+    checkToken,
+    guardCheck('admin', 'superAdmin'),
+    deleteCompanyController,
+)

@@ -1,9 +1,8 @@
-import dotenv from "dotenv"
+import dotenv from 'dotenv'
 dotenv.config()
 
-
 export const config = {
-    jwtKey : {
+    jwtKey: {
         accessSecret: process.env.JWT_ACCESS_SECRET,
         accessTime: process.env.JWT_ACCESS_EXPIRES_IN,
         refreshSecret: process.env.JWT_REFRESH_SECRET,
@@ -15,16 +14,16 @@ export const config = {
         user: process.env.USER_EMAIL,
         pass: process.env.APP_PASSWORD,
     },
-    database : {
+    database: {
         host: process.env.PG_HOST,
         port: process.env.PG_PORT,
         user: process.env.PG_USER,
         password: process.env.PG_PASSWORD,
         database: process.env.PG_DATABASE,
     },
-    application:{
+    application: {
         port: process.env.PORT,
         node_env: process.env.NODE_ENV,
         log_token: process.env.LOGGER_TOKEN,
-    }
+    },
 }
