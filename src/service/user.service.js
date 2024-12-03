@@ -6,12 +6,15 @@ import {
     otpGenerator,
     sendMail,
     verifyTokens,
+    createForgetToken,
 } from '../helpers/index.helpers.js'
 //auth functions
 export const registerUserService = async (userData) => {
     try {
-        const { username, password } = userData
-
+        const { username, password, role } = userData
+        if (role == 'admin' || role == 'superAdmin') {
+            userData.role = 'job_seeker'
+        }
         const user = await db('users').where('username', username)
 
         if (user.length != 0) {
@@ -33,7 +36,7 @@ export const registerUserService = async (userData) => {
 
         const check = await createOtp(otp, userId.id)
 
-        if (check.isTrue) {
+        if (check.isCreated) {
             return { success: true, userId }
         }
 
@@ -66,28 +69,34 @@ export const verifyUserService = async (userData) => {
 }
 export const loginUserService = async (userData) => {
     try {
-        const { username, password } = userData
-        const [user] = await db('users').select('*').where('username', username)
-
+        const { username, password, email } = userData
+        let user;
+        if (username) {
+            user = await db('users')
+                .select('*')
+                .where('username', username)
+        } else {
+            user = await db('users').select('*').where('email', email)
+        }
         if (!user) {
             throw new Error('User not found')
         }
-        const isEqualPassword = await comparePassword(password, user.password)
+        const isEqualPassword = await comparePassword(password, user[0].password)
         if (!isEqualPassword) {
             throw new Error('Username or password not valid')
         }
-        const result = await isActive(user.id)
-        console.log(result);
-        
+        const result = await isActive(user[0].id)
         if (!result.isActive) {
-            throw new Error("Account not verified");
+            throw new Error('Account not verified')
         }
         const payload = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
+            id: user[0].id,
+            username: user[0].username,
+            email: user[0].email,
+            role: user[0].role,
+            status: user[0].status,
         }
+        
         const token = await createTokens(payload)
         return { success: true, token }
     } catch (error) {
@@ -99,11 +108,11 @@ export const getUserProfileService = async (userData) => {
         const { username } = userData
 
         const user = await db('users').select('*').where('username', username)
-
+        
         if (!user) {
             throw new Error('User not found')
         }
-        delete user.password
+        delete user[0].password
         return { success: true, user }
     } catch (error) {
         return { success: false, error }
@@ -117,57 +126,86 @@ export const updateTokenService = async (refreshToken) => {
 }
 export const forgetPasswordService = async (userData) => {
     try {
-        const { email, id, username } = userData
-        const [user] = await db('users').select('*').where('username', username)
-        if (!user) {
+        const { email, username } = userData
+        if (username) {
+            const user = await db('users')
+                .select('*')
+                .where('username', username)
+        } else {
+            const user = await db('users').select('*').where('email', email)
+        }
+        if (user.length == 0) {
             throw new Error('User not found')
         }
         const otp = otpGenerator()
-        const result = await updateOtp(id, otp)
-        const { isUpdated, error } = result
+        const result = await createOtp(otp, user[0].id)
+        const { isCreated, error } = result
 
-        if (!isUpdated) {
+        if (!isCreated) {
             return { success: false, error }
         }
 
         await sendMail(
             email,
             'Otp for change password',
-            `<p><b>This key for updating your password: ${otp}</b></p>
-            <p>"http://localhost:3000/api/v1/auth/change/password/${userData.id}"</p>`,
+            `<p><b>This key for updating your password: ${otp}</b></p>`,
         )
-
-        return { success: true }
+        const payload = {
+            id: user[0].id,
+            email: user[0].email,
+            role: user[0].role,
+            status: user[0].status,
+        }
+        const forgetToken = createForgetToken(payload)
+        return { success: true, forgetToken }
     } catch (error) {
         return { success: false, error }
     }
 }
-export const changePasswordService = async (data, userId) => {
+export const forgetPasswordChangeService = async (userData, newData) => {
     try {
-        const { newPassword, userOtp } = data
-        const otpData = await findOtpById(userId)
+        const { newPassword, userOtp } = newData
+        const otpData = await findOtpById(userData.id)
         if (userOtp != otpData.otp_code) {
             throw new Error('Otp code not valid')
         }
         const hashPassword = await generateHashPassword(newPassword)
         const result = await updateUserPassword(userId, hashPassword)
         const { isUpdated, error } = result
-
         if (!isUpdated) {
             return { success: false, error }
         }
+        await deleteOtp(userData.id)
         return { success: true }
     } catch (error) {
         return { success: true, error }
+    }
+}
+export const changePasswordService = async (userData, body) => {
+    try {
+        const user = await db('users').select('*').where('id', userData.id)
+        if (user.length == 0) {
+            throw new Error("User not found");
+        }
+        const newPassword = body.password
+        const hashPassword = await generateHashPassword(newPassword)
+        user[0].password = hashPassword
+        await db('users').where('id', userData.id).update(user[0])
+        return {success:true}
+    } catch (error) {
+        return {success:true, error}
     }
 }
 //user functions
 export const getAllUsersService = async ({ limit, skip }) => {
     try {
         const users = await db('users').select('*').offset(skip).limit(limit)
-
         if (users.length == 0) {
             throw new Error('Users not found')
+        }
+        // eslint-disable-next-line prefer-const
+        for(let user of users){
+            delete user.password
         }
         return { success: true, users }
     } catch (error) {
@@ -237,17 +275,15 @@ export const deleteUserByIdService = async (userId) => {
 const createOtp = async (otp_code, user_id) => {
     try {
         await db('otp').insert({ otp_code, user_id })
-        return { isTrue: true }
+        return { isCreated: true }
     } catch (error) {
-        return { isTrue: false, error: error }
+        return { isCreated: false, error: error }
     }
 }
 const deleteOtp = async (user_id) => {
     try {
         await db('otp').where('user_id', user_id).del()
-    } catch (error) {
-        
-    }
+    } catch (error) {}
 }
 const findOtpById = async (user_id) => {
     try {
@@ -271,14 +307,6 @@ const updateUserStatus = async (userId) => {
         return { isUpdated: false, err }
     }
 }
-const updateOtp = async (user_id, otp_code) => {
-    try {
-        await db('otp').where('user_id', user_id).update({ otp_code })
-        return { isUpdated: true }
-    } catch (error) {
-        return { isUPdated: false, error }
-    }
-}
 const updateUserPassword = async (userId, hashPassword) => {
     try {
         await db('users').where('id', userId).update({ password: hashPassword })
@@ -289,15 +317,17 @@ const updateUserPassword = async (userId, hashPassword) => {
 }
 const isActive = async (userId) => {
     try {
-        const user = await db('users').select('status').where('id', userId)
+        const user = await db('users').select('*').where('id', userId)
         if (user.length < 1) {
-            throw new Error("User not found");
+            throw new Error('User not found')
         }
-        if (user.status == 'active') {
-            return {isActive:true}
+        console.log(user);
+        
+        if (user[0].status == 'active') {
+            return { isActive: true }
         }
-        return {isActive:false}
+        return { isActive: false }
     } catch (error) {
-        throw new Error(error); 
+        throw new Error(error)
     }
 }

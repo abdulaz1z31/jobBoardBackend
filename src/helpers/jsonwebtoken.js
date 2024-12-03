@@ -18,3 +18,18 @@ export const verifyTokens = (type, token) => {
     )
     return data
 }
+
+export const createForgetToken = async (payload) => {
+    const forgetToken = jwt.sign(payload, config.jwtKey.forgetSecret, {
+        expiresIn: config.jwtKey.forgetTime,
+    })
+    return { forgetToken }
+}
+
+export const verifyForgetToken = (type, token) => {
+    const data = jwt.verify(
+        token,
+        config.jwtKey.forgetSecret
+    )
+    return data
+}
