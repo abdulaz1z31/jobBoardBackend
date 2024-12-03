@@ -40,6 +40,20 @@ export const searchCompanyService = async (query) => {
         return { success: false, error }
     }
 }
+export const getAllCompaniesJobsService = async (id) => {
+    try {
+        const getAllJobs = await db
+            .select('*')
+            .from('joblisting')
+            .where('company_id', id)
+        if (getAllJobs.length == 0) {
+            throw new Error('Jobs not found')
+        }
+        return getAllJobs
+    } catch (error) {
+        throw new Error(error.message)
+    }
+}
 export const registerCompanyService = async (data, userId) => {
     try {
         const id = userId
