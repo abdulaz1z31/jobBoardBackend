@@ -1,3 +1,7 @@
+import dotenv from "dotenv"
+dotenv.config()
+
+
 export const config = {
     jwtKey : {
         accessSecret: process.env.JWT_ACCESS_SECRET,

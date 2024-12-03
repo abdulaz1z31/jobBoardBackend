@@ -7,7 +7,7 @@ import {
     sendMail,
     verifyTokens,
 } from '../helpers/index.helpers.js'
-
+//auth functions
 export const registerUserService = async (userData) => {
     try {
         const { username, password } = userData
@@ -58,6 +58,7 @@ export const verifyUserService = async (userData) => {
         if (!isUpdated) {
             throw new Error(err)
         }
+        await deleteOtp(user_id)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -74,6 +75,12 @@ export const loginUserService = async (userData) => {
         const isEqualPassword = await comparePassword(password, user.password)
         if (!isEqualPassword) {
             throw new Error('Username or password not valid')
+        }
+        const result = await isActive(user.id)
+        console.log(result);
+        
+        if (!result.isActive) {
+            throw new Error("Account not verified");
         }
         const payload = {
             id: user.id,
@@ -154,7 +161,7 @@ export const changePasswordService = async (data, userId) => {
         return { success: true, error }
     }
 }
-
+//user functions
 export const getAllUsersService = async ({ limit, skip }) => {
     try {
         const users = await db('users').select('*').offset(skip).limit(limit)
@@ -226,12 +233,20 @@ export const deleteUserByIdService = async (userId) => {
     }
 }
 
+//helper functions
 const createOtp = async (otp_code, user_id) => {
     try {
         await db('otp').insert({ otp_code, user_id })
         return { isTrue: true }
     } catch (error) {
         return { isTrue: false, error: error }
+    }
+}
+const deleteOtp = async (user_id) => {
+    try {
+        await db('otp').where('user_id', user_id).del()
+    } catch (error) {
+        
     }
 }
 const findOtpById = async (user_id) => {
@@ -270,5 +285,19 @@ const updateUserPassword = async (userId, hashPassword) => {
         return { isUpdated: true }
     } catch (err) {
         return { isUpdated: false, err }
+    }
+}
+const isActive = async (userId) => {
+    try {
+        const user = await db('users').select('status').where('id', userId)
+        if (user.length < 1) {
+            throw new Error("User not found");
+        }
+        if (user.status == 'active') {
+            return {isActive:true}
+        }
+        return {isActive:false}
+    } catch (error) {
+        throw new Error(error); 
     }
 }
