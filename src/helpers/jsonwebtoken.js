@@ -26,7 +26,7 @@ export const createForgetToken = async (payload) => {
     return { forgetToken }
 }
 
-export const verifyForgetToken = (type, token) => {
+export const verifyForgetToken = (token) => {
     const data = jwt.verify(
         token,
         config.jwtKey.forgetSecret
