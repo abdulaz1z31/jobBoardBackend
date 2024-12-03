@@ -24,7 +24,7 @@ export const getByICompanyService = async (id) => {
         }
         return data[0]
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
 export const searchCompanyService = async (query) => {
@@ -38,17 +38,31 @@ export const searchCompanyService = async (query) => {
         return { success: false, error }
     }
 }
-export const createCompanyService = async (body) => {
+export const registerCompanyService = async (body, userId) => {
     try {
+        const id = userId
+        console.log(id)
+        const hasCompany = await db
+            .select('*')
+            .from('companies')
+            .where('name', body.name)
+        if (!hasCompany[0]) {
+            const regsitrationCompany = await db('companies')
+                .insert({ ...body, user_id: id })
+                .returning('*')
+            if (!regsitrationCompany[0]) {
+                throw new Error('Company Registration failed')
+            }
+            return regsitrationCompany[0].id
         const data = await db('companies')
             .insert({ ...body })
             .returning('*')
         if (!data[0]) {
             throw new Error('Error')
         }
-        return data[0]
+        throw new Error('Company already exists')
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
 export const updateCompanyService = async (id, body) => {
