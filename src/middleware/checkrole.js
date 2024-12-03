@@ -32,7 +32,7 @@ export const adminOrSelf = (...roles) => {
                     req.body.role = userRole
                 }
                 next()
-            } else {
+            } else {  
                 logger.error('Permission Denied')
                 res.status(403).send('Permission Denied')
             }
@@ -57,6 +57,8 @@ export const isSuperAdmin = async (req, res, next)=> {
             res.status(403).send({
                 message:"You do not have access"
             })
+        } else {
+            next()
         }
     } catch (error) {
         next(error)

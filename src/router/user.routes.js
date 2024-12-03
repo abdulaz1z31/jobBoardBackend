@@ -24,6 +24,6 @@ userRouter.get(
     pagination,
     searchUser,
 )
-userRouter.get('/:id', checkToken, adminOrSelf('admin'),isSuperAdmin, getUserById)
-userRouter.put('/:id', checkToken, adminOrSelf('admin'), isSuperAdmin, updateUserById)
-userRouter.delete('/:id', checkToken, adminOrSelf('admin'),isSuperAdmin, deleteUserById)
+userRouter.get('/:id', checkToken, adminOrSelf('admin', 'superAdmin'),isSuperAdmin, getUserById)
+userRouter.put('/:id', checkToken, adminOrSelf('admin', 'superAdmin'), isSuperAdmin, updateUserById)
+userRouter.delete('/:id', checkToken, adminOrSelf('admin', 'superAdmin'),isSuperAdmin, deleteUserById)
