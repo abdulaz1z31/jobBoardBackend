@@ -66,7 +66,6 @@ export const searchCompanyController = async (req, res, next) => {
 export const createCompanyController = async (req, res, next) => {
     try {
         logger.info('Router /api/v1/company/create METHOD : POST')
-        // console.log(req.user.id)
         const newCompany = await registerCompanyService(req.body, req.user.id)
         return res.status(statusCode.CREATED).send({
             msg: 'New Company',
