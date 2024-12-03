@@ -40,16 +40,23 @@ export const searchCompanyService = async (query) => {
         return { success: false, error }
     }
 }
-export const createCompanyService = async (body) => {
+export const registerCompanyService = async (body, userId) => {
     try {
-        console.log(body)
-        const data = await db('companies')
-            .insert({ ...body })
-            .returning('*')
-        if (!data[0]) {
-            throw new Error('Error')
+        const id = userId
+        const hasCompany = await db
+            .select('*')
+            .from('companies')
+            .where('name', body.name)
+        if (!hasCompany[0]) {
+            const regsitrationCompany = await db('companies')
+                .insert({ ...body, user_id: id })
+                .returning('*')
+            if (!regsitrationCompany[0]) {
+                throw new Error('Company Registration failed')
+            }
+            return regsitrationCompany[0].id
         }
-        return data[0]
+        throw new Error('Company already exists')
     } catch (error) {
         throw new Error(error)
     }

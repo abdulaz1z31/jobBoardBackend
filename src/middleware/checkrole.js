@@ -1,5 +1,5 @@
 import { logger } from '../utils/index.utils.js'
-
+import { getByICompanyService } from '../service/index.service.js'
 export const roleGuard = (...roles) => {
     return async (req, res, next) => {
         try {
@@ -19,7 +19,27 @@ export const roleGuard = (...roles) => {
         }
     }
 }
-
+export const guardCheck = (...roles) => {
+    return async (req, res, next) => {
+        try {
+            const userId = req.user.id
+            const checkCompany = await getByICompanyService(req.params.id)
+            const userRole = req.user.role
+            if (roles.includes(userRole) || checkCompany[0].user_id == userId) {
+                next()
+            } else {
+                logger.error('Permission Denied')
+                res.status(403).send('Permission Denied')
+            }
+        } catch (error) {
+            logger.error('Server Error')
+            res.status(500).send({
+                status: 'Server error',
+                error,
+            })
+        }
+    }
+}
 export const adminOrSelf = (...roles) => {
     return async (req, res, next) => {
         try {
