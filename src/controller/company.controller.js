@@ -5,6 +5,7 @@ import {
     getByICompanyService,
     searchCompanyService,
     updateCompanyService,
+    getAllCompaniesJobsService,
 } from '../service/index.service.js'
 import { logger, statusCode } from '../utils/index.utils.js'
 export const getAllCompanyController = async (req, res, next) => {
@@ -60,6 +61,21 @@ export const searchCompanyController = async (req, res, next) => {
             })
         }
     } catch (error) {
+        next(error)
+    }
+}
+export const getAllCompanyJobsController = async (req, res, next) => {
+    try {
+        logger.info(`Router /api/v1/company/jobs/${req.params.id} METHOD : GET`)
+        const getAll = await getAllCompaniesJobsService(req.params.id)
+        return res.status(statusCode.OK).send({
+            msg: 'All Jobs',
+            jobs: getAll,
+        })
+    } catch (error) {
+        logger.error(
+            `Router /api/v1/company/jobs/${req.params.id} METHOD : GET`,
+        )
         next(error)
     }
 }

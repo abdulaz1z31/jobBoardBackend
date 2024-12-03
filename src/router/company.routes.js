@@ -6,6 +6,7 @@ import {
     searchCompanyController,
     updateIdCompanyController,
     createCompanyController,
+    getAllCompanyJobsController,
 } from '../controller/index.controller.js'
 import {
     checkToken,
@@ -15,6 +16,12 @@ import {
 
 export const companyRouter = Router()
 
+companyRouter.get(
+    '/jobs/:id',
+    pagination,
+    checkToken,
+    getAllCompanyJobsController,
+)
 companyRouter.get('/', checkToken, pagination, getAllCompanyController)
 companyRouter.get('/search', checkToken, pagination, searchCompanyController)
 companyRouter.get(
