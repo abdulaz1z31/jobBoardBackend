@@ -1,3 +1,4 @@
+import knex from 'knex'
 import { db } from '../database/index.database.js'
 import {
     comparePassword,
@@ -300,8 +301,9 @@ export const deleteUserByIdService = async (userId) => {
 
 //helper functions
 const createOtp = async (otp_code, user_id) => {
+    const expirationTime = new Date(Date.now() + 3 * 60 * 1000)
     try {
-        await db('otp').insert({ otp_code, user_id })
+        await db('otp').insert({ otp_code, user_id, expires_at: expirationTime })
         return { isCreated: true }
     } catch (error) {
         return { isCreated: false, error: error }
