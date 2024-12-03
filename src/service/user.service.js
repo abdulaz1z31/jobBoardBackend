@@ -1,4 +1,3 @@
-import knex from 'knex'
 import { db } from '../database/index.database.js'
 import {
     comparePassword,
@@ -48,21 +47,24 @@ export const registerUserService = async (userData) => {
 }
 export const verifyUserService = async (userData) => {
     try {
+        const now = new Date()
         const { user_id, otp_code } = userData
         const { isExists, error, otp } = await findOtpById(user_id)
-
+        
         if (!isExists) {
             return { success: false, error }
         }
         if (otp.otp_code != otp_code) {
             throw new Error('Otp is not valid')
         }
+        if (now > otp.expires_at) {
+            throw new Error("Otp expired");
+        }
+        await deleteOtp(user_id)
         const { isUpdated, err } = await updateUserStatus(user_id)
-
         if (!isUpdated) {
             throw new Error(err)
         }
-        await deleteOtp(user_id)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -128,12 +130,13 @@ export const updateTokenService = async (refreshToken) => {
 export const forgetPasswordService = async (userData) => {
     try {
         const { email, username } = userData
+        let user
         if (username) {
-            const user = await db('users')
+            user = await db('users')
                 .select('*')
                 .where('username', username)
         } else {
-            const user = await db('users').select('*').where('email', email)
+            user = await db('users').select('*').where('email', email)
         }
         if (user.length == 0) {
             throw new Error('User not found')
@@ -147,7 +150,7 @@ export const forgetPasswordService = async (userData) => {
         }
 
         await sendMail(
-            email,
+            user[0].email,
             'Otp for change password',
             `<p><b>This key for updating your password: ${otp}</b></p>`,
         )
@@ -157,7 +160,7 @@ export const forgetPasswordService = async (userData) => {
             role: user[0].role,
             status: user[0].status,
         }
-        const forgetToken = createForgetToken(payload)
+        const forgetToken = await createForgetToken(payload)
         return { success: true, forgetToken }
     } catch (error) {
         return { success: false, error }
@@ -171,15 +174,20 @@ export const forgetPasswordChangeService = async (userData, newData) => {
             throw new Error('Otp code not valid')
         }
         const hashPassword = await generateHashPassword(newPassword)
-        const result = await updateUserPassword(userId, hashPassword)
+        const result = await updateUserPassword(userData.id, hashPassword)
+        
         const { isUpdated, error } = result
         if (!isUpdated) {
             return { success: false, error }
         }
+        const now = new Date()
+        if (now > otpData.expires_at) {
+            throw new Error("Otp is expired");
+        }
         await deleteOtp(userData.id)
         return { success: true }
     } catch (error) {
-        return { success: true, error }
+        return { success: false, error }
     }
 }
 export const changePasswordService = async (userData, body) => {
@@ -191,7 +199,7 @@ export const changePasswordService = async (userData, body) => {
         const newPassword = body.password
         const hashPassword = await generateHashPassword(newPassword)
         user[0].password = hashPassword
-        await db('users').where('id', userData.id).update(user[0])
+        await db('users').update(user[0]).where('id', userData.id)
         return {success:true}
     } catch (error) {
         return {success:true, error}
@@ -301,7 +309,7 @@ export const deleteUserByIdService = async (userId) => {
 
 //helper functions
 const createOtp = async (otp_code, user_id) => {
-    const expirationTime = new Date(Date.now() + 3 * 60 * 1000)
+    const expirationTime = new Date(Date.now() + 2 * 60 * 1000)
     try {
         await db('otp').insert({ otp_code, user_id, expires_at: expirationTime })
         return { isCreated: true }
@@ -316,16 +324,16 @@ const deleteOtp = async (user_id) => {
 }
 const findOtpById = async (user_id) => {
     try {
-        const [otp] = await db
+        const otp = await db
             .select('*')
             .from('otp')
             .where('user_id', '=', user_id)
-        if (Object.keys(otp).length == 0) {
-            throw new Error('Invalid user id')
+        if (otp.length == 0) {
+            throw new Error('Otp not found')
         }
-        return { isExists: true, otp }
+        return { isExists: true, otp:otp[0] }
     } catch (error) {
-        return { isExists: true, error }
+        return { isExists: false, error }
     }
 }
 const updateUserStatus = async (userId) => {
@@ -338,7 +346,7 @@ const updateUserStatus = async (userId) => {
 }
 const updateUserPassword = async (userId, hashPassword) => {
     try {
-        await db('users').where('id', userId).update({ password: hashPassword })
+        await db('users').update({ password: hashPassword }).where('id', userId)
         return { isUpdated: true }
     } catch (err) {
         return { isUpdated: false, err }

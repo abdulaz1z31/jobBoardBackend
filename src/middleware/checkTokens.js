@@ -28,7 +28,6 @@ export const checkToken = (req, res, next) => {
 export const checkForgetToken = (req, res, next) => {
     try {
         const bearerToken = req.headers?.authorization
-
         if (!bearerToken || !bearerToken.startsWith('Bearer')) {
             return res
                 .status(statusCode.UNAUTHORIZED)
@@ -36,6 +35,7 @@ export const checkForgetToken = (req, res, next) => {
         }
         const token = bearerToken.split(' ')[1]
         const decode = verifyForgetToken(token)
+        
         const status = decode.status
         if (status != 'active') {
             throw new Error("Account is not active");

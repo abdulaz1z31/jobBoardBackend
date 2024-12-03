@@ -16,7 +16,6 @@ export const registerUser = async (req, res, next) => {
     try {
         const result = await registerUserService(req.body)
         const { success, error, userId } = result
-
         if (success) {
             return res.status(statusCode.CREATED).send({
                 message: 'Success',
@@ -110,11 +109,10 @@ export const forgetPassword = async (req, res, next) => {
     try {
         const result = await forgetPasswordService(req.body)
         const { success, error, forgetToken } = result
-
         if (!success) {
             return res.status(statusCode.BAD_REQUEST).send({
                 message: 'Fail',
-                error: error,
+                error: error.message,
             })
         }
         return res.status(statusCode.OK).send({
