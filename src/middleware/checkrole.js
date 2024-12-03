@@ -25,7 +25,7 @@ export const guardCheck = (...roles) => {
             const userId = req.user.id
             const checkCompany = await getByICompanyService(req.params.id)
             const userRole = req.user.role
-            if (roles.includes(userRole) || checkCompany[0].user_id == userId) {
+            if (roles.includes(userRole) && checkCompany[0].user_id == userId) {
                 next()
             } else {
                 logger.error('Permission Denied')

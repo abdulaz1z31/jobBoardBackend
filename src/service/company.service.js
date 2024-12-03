@@ -24,7 +24,7 @@ export const getByICompanyService = async (id) => {
         }
         return data[0]
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
 export const searchCompanyService = async (query) => {
@@ -43,6 +43,7 @@ export const searchCompanyService = async (query) => {
 export const registerCompanyService = async (body, userId) => {
     try {
         const id = userId
+        console.log(id)
         const hasCompany = await db
             .select('*')
             .from('companies')
@@ -58,7 +59,7 @@ export const registerCompanyService = async (body, userId) => {
         }
         throw new Error('Company already exists')
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
 export const updateCompanyService = async (id, body) => {
