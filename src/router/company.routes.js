@@ -1,29 +1,52 @@
 import { Router } from 'express'
 import {
-    createCompanyController,
     deleteCompanyController,
     getAllCompanyController,
     getByIdCompanyController,
     searchCompanyController,
     updateIdCompanyController,
+    createCompanyController,
+    getAllCompanyJobsController,
 } from '../controller/index.controller.js'
 import {
     checkToken,
     pagination,
-    validationMiddleware,
+    guardCheck,
+    roleGuard,
 } from '../middleware/index.middleware.js'
-import { companiesSchema } from '../validations/companies.schema.js'
 
 export const companyRouter = Router()
 
-companyRouter.get('/', checkToken, pagination, getAllCompanyController)
-companyRouter.get('/search', checkToken, pagination, searchCompanyController)
-companyRouter.get('/:id', checkToken, getByIdCompanyController)
-companyRouter.post(
+companyRouter.get(
+    '/jobs/:id',
+    pagination,
+    checkToken,
+    getAllCompanyJobsController,
+)
+companyRouter.get(
     '/',
     checkToken,
-    validationMiddleware(companiesSchema),
-    createCompanyController,
+    roleGuard('admin', 'superAdmin'),
+    pagination,
+    getAllCompanyController,
 )
-companyRouter.put('/:id', checkToken, updateIdCompanyController)
-companyRouter.delete('/:id', checkToken, deleteCompanyController)
+companyRouter.get('/search', checkToken, pagination, searchCompanyController)
+companyRouter.get(
+    '/:id',
+    checkToken,
+    guardCheck('admin', 'superAdmin'),
+    getByIdCompanyController,
+)
+companyRouter.post('/', checkToken, createCompanyController)
+companyRouter.put(
+    '/:id',
+    checkToken,
+    guardCheck('admin', 'superAdmin'),
+    updateIdCompanyController,
+)
+companyRouter.delete(
+    '/:id',
+    checkToken,
+    guardCheck('admin', 'superAdmin'),
+    deleteCompanyController,
+)

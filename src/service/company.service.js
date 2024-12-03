@@ -24,14 +24,12 @@ export const getByICompanyService = async (id) => {
         }
         return data[0]
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
 export const searchCompanyService = async (query) => {
     try {
         const { name } = query
-        console.log(name)
-
         const companies = await db('companies')
             .select('*')
             .where('name', 'ILIKE', `%${name}%`)
@@ -40,20 +38,42 @@ export const searchCompanyService = async (query) => {
         return { success: false, error }
     }
 }
-export const createCompanyService = async (body) => {
+export const getAllCompaniesJobsService = async (id) => {
     try {
-        console.log(body)
-        const data = await db('companies')
-            .insert({ ...body })
-            .returning('*')
-        if (!data[0]) {
-            throw new Error('Error')
+        const getAllJobs = await db
+            .select('*')
+            .from('joblisting')
+            .where('company_id', id)
+        if (getAllJobs.length == 0) {
+            throw new Error('Jobs not found')
         }
-        return data[0]
+        return getAllJobs
     } catch (error) {
-        throw new Error(error)
+        throw new Error(error.message)
     }
 }
+export const registerCompanyService = async (data, userId) => {
+    try {
+        const id = userId
+        const hasCompany = await db
+            .select('*')
+            .from('companies')
+            .where('name', data.name)
+        if (!hasCompany[0]) {
+            const regsitrationCompany = await db('companies')
+                .insert({ ...data, user_id: id })
+                .returning('*')
+            if (!regsitrationCompany[0]) {
+                throw new Error('Company Registration failed with error')
+            }
+            return regsitrationCompany[0].id
+        }
+        throw new Error('Company already exists')
+    } catch (error) {
+        throw new Error(error.message)
+    }
+}
+
 export const updateCompanyService = async (id, body) => {
     try {
         const data = await db('companies')
@@ -70,9 +90,7 @@ export const updateCompanyService = async (id, body) => {
 }
 export const deleteCompanyService = async (id) => {
     try {
-        console.log(id)
         const data = await db('companies').where('id', id).del().returning('*')
-        console.log(data)
         if (!data) {
             throw new Error('Error')
         }

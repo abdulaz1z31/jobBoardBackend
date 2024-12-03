@@ -6,12 +6,15 @@ import {
     otpGenerator,
     sendMail,
     verifyTokens,
+    createForgetToken,
 } from '../helpers/index.helpers.js'
-
+//auth functions
 export const registerUserService = async (userData) => {
     try {
-        const { username, password } = userData
-
+        const { username, password, role } = userData
+        if (role == 'admin' || role == 'superAdmin') {
+            userData.role = 'job_seeker'
+        }
         const user = await db('users').where('username', username)
 
         if (user.length != 0) {
@@ -33,7 +36,7 @@ export const registerUserService = async (userData) => {
 
         const check = await createOtp(otp, userId.id)
 
-        if (check.isTrue) {
+        if (check.isCreated) {
             return { success: true, userId }
         }
 
@@ -44,6 +47,7 @@ export const registerUserService = async (userData) => {
 }
 export const verifyUserService = async (userData) => {
     try {
+        const now = new Date()
         const { user_id, otp_code } = userData
         const { isExists, error, otp } = await findOtpById(user_id)
 
@@ -53,8 +57,11 @@ export const verifyUserService = async (userData) => {
         if (otp.otp_code != otp_code) {
             throw new Error('Otp is not valid')
         }
+        if (now > otp.expires_at) {
+            throw new Error('Otp expired')
+        }
+        await deleteOtp(user_id)
         const { isUpdated, err } = await updateUserStatus(user_id)
-
         if (!isUpdated) {
             throw new Error(err)
         }
@@ -65,22 +72,35 @@ export const verifyUserService = async (userData) => {
 }
 export const loginUserService = async (userData) => {
     try {
-        const { username, password } = userData
-        const [user] = await db('users').select('*').where('username', username)
-
+        const { username, password, email } = userData
+        let user
+        if (username) {
+            user = await db('users').select('*').where('username', username)
+        } else {
+            user = await db('users').select('*').where('email', email)
+        }
         if (!user) {
             throw new Error('User not found')
         }
-        const isEqualPassword = await comparePassword(password, user.password)
+        const isEqualPassword = await comparePassword(
+            password,
+            user[0].password,
+        )
         if (!isEqualPassword) {
             throw new Error('Username or password not valid')
         }
-        const payload = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
+        const result = await isActive(user[0].id)
+        if (!result.isActive) {
+            throw new Error('Account not verified')
         }
+        const payload = {
+            id: user[0].id,
+            username: user[0].username,
+            email: user[0].email,
+            role: user[0].role,
+            status: user[0].status,
+        }
+
         const token = await createTokens(payload)
         return { success: true, token }
     } catch (error) {
@@ -96,7 +116,7 @@ export const getUserProfileService = async (userData) => {
         if (!user) {
             throw new Error('User not found')
         }
-        delete user.password
+        delete user[0].password
         return { success: true, user }
     } catch (error) {
         return { success: false, error }
@@ -110,57 +130,116 @@ export const updateTokenService = async (refreshToken) => {
 }
 export const forgetPasswordService = async (userData) => {
     try {
-        const { email, id, username } = userData
-        const [user] = await db('users').select('*').where('username', username)
-        if (!user) {
+        const { email, username } = userData
+        let user
+        if (username) {
+            user = await db('users').select('*').where('username', username)
+        } else {
+            user = await db('users').select('*').where('email', email)
+        }
+        if (user.length == 0) {
             throw new Error('User not found')
         }
         const otp = otpGenerator()
-        const result = await updateOtp(id, otp)
-        const { isUpdated, error } = result
+        const result = await createOtp(otp, user[0].id)
+        const { isCreated, error } = result
 
-        if (!isUpdated) {
+        if (!isCreated) {
             return { success: false, error }
         }
 
         await sendMail(
-            email,
+            user[0].email,
             'Otp for change password',
-            `<p><b>This key for updating your password: ${otp}</b></p>
-            <p>"http://localhost:3000/api/v1/auth/change/password/${userData.id}"</p>`,
+            `<p><b>This key for updating your password: ${otp}</b></p>`,
         )
+        const payload = {
+            id: user[0].id,
+            email: user[0].email,
+            role: user[0].role,
+            status: user[0].status,
+        }
+        const forgetToken = await createForgetToken(payload)
+        return { success: true, forgetToken }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
+export const forgetPasswordChangeService = async (userData, newData) => {
+    try {
+        const { newPassword, userOtp } = newData
+        const otpData = await findOtpById(userData.id)
+        if (userOtp != otpData.otp_code) {
+            throw new Error('Otp code not valid')
+        }
+        const hashPassword = await generateHashPassword(newPassword)
+        const result = await updateUserPassword(userData.id, hashPassword)
 
+        const { isUpdated, error } = result
+        if (!isUpdated) {
+            return { success: false, error }
+        }
+        const now = new Date()
+        if (now > otpData.expires_at) {
+            throw new Error('Otp is expired')
+        }
+        await deleteOtp(userData.id)
         return { success: true }
     } catch (error) {
         return { success: false, error }
     }
 }
-export const changePasswordService = async (data, userId) => {
+export const changePasswordService = async (userData, body) => {
     try {
-        const { newPassword, userOtp } = data
-        const otpData = await findOtpById(userId)
-        if (userOtp != otpData.otp_code) {
-            throw new Error('Otp code not valid')
+        const user = await db('users').select('*').where('id', userData.id)
+        if (user.length == 0) {
+            throw new Error('User not found')
         }
+        const newPassword = body.password
         const hashPassword = await generateHashPassword(newPassword)
-        const result = await updateUserPassword(userId, hashPassword)
-        const { isUpdated, error } = result
-
-        if (!isUpdated) {
-            return { success: false, error }
-        }
+        user[0].password = hashPassword
+        await db('users').update(user[0]).where('id', userData.id)
         return { success: true }
     } catch (error) {
         return { success: true, error }
     }
 }
+//admin fuctions
+export const createAdminService = async (data) => {
+    try {
+        data.role = 'admin'
+        const hashPassword = await generateHashPassword(data.password)
+        data.password = hashPassword
+        data.status = 'active'
+        const admin = await db('users').insert(data).returning('*')
 
+        if (admin.length == 0) {
+            throw new Error('Error while creating admin')
+        }
+        delete admin[0].password
+        return { success: true, admin }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
+export const deleteAdminService = async (userId) => {
+    try {
+        await db('users').where('id', userId).del()
+        return { success: true }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
+//user functions
 export const getAllUsersService = async ({ limit, skip }) => {
     try {
         const users = await db('users').select('*').offset(skip).limit(limit)
-
         if (users.length == 0) {
             throw new Error('Users not found')
+        }
+        // eslint-disable-next-line prefer-const
+        for (let user of users) {
+            delete user.password
         }
         return { success: true, users }
     } catch (error) {
@@ -226,26 +305,37 @@ export const deleteUserByIdService = async (userId) => {
     }
 }
 
+//helper functions
 const createOtp = async (otp_code, user_id) => {
+    const expirationTime = new Date(Date.now() + 2 * 60 * 1000)
     try {
-        await db('otp').insert({ otp_code, user_id })
-        return { isTrue: true }
+        await db('otp').insert({
+            otp_code,
+            user_id,
+            expires_at: expirationTime,
+        })
+        return { isCreated: true }
     } catch (error) {
-        return { isTrue: false, error: error }
+        return { isCreated: false, error: error }
     }
+}
+const deleteOtp = async (user_id) => {
+    try {
+        await db('otp').where('user_id', user_id).del()
+    } catch (error) {}
 }
 const findOtpById = async (user_id) => {
     try {
-        const [otp] = await db
+        const otp = await db
             .select('*')
             .from('otp')
             .where('user_id', '=', user_id)
-        if (Object.keys(otp).length == 0) {
-            throw new Error('Invalid user id')
+        if (otp.length == 0) {
+            throw new Error('Otp not found')
         }
-        return { isExists: true, otp }
+        return { isExists: true, otp: otp[0] }
     } catch (error) {
-        return { isExists: true, error }
+        return { isExists: false, error }
     }
 }
 const updateUserStatus = async (userId) => {
@@ -256,19 +346,25 @@ const updateUserStatus = async (userId) => {
         return { isUpdated: false, err }
     }
 }
-const updateOtp = async (user_id, otp_code) => {
-    try {
-        await db('otp').where('user_id', user_id).update({ otp_code })
-        return { isUpdated: true }
-    } catch (error) {
-        return { isUPdated: false, error }
-    }
-}
 const updateUserPassword = async (userId, hashPassword) => {
     try {
-        await db('users').where('id', userId).update({ password: hashPassword })
+        await db('users').update({ password: hashPassword }).where('id', userId)
         return { isUpdated: true }
     } catch (err) {
         return { isUpdated: false, err }
+    }
+}
+const isActive = async (userId) => {
+    try {
+        const user = await db('users').select('*').where('id', userId)
+        if (user.length < 1) {
+            throw new Error('User not found')
+        }
+        if (user[0].status == 'active') {
+            return { isActive: true }
+        }
+        return { isActive: false }
+    } catch (error) {
+        throw new Error(error)
     }
 }

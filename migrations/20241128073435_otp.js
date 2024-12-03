@@ -14,6 +14,7 @@ export async function up(knex) {
             .onDelete('CASCADE')
             .onUpdate('CASCADE')
         table.timestamps(true, true)
+        table.timestamp('expires_at').notNullable()
     })
 }
 

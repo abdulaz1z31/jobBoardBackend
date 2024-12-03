@@ -18,7 +18,7 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
     if (error) {
         return res.status(500).send({
-            error: error.message,
+            error: error,
         })
     }
 })
