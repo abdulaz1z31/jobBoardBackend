@@ -161,7 +161,8 @@ export const changePassword = async (req, res, next) => {
 }
 export const createAdmin = async (req, res, next) => {
     try {
-        const {success, error, admin} = createAdminService(req.body)
+        const {success, error, admin} = await createAdminService(req.body)
+        
         if (success) {
             return res.status(statusCode.CREATED).send({
                 message:"Created",
