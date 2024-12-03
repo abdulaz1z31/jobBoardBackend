@@ -12,6 +12,7 @@ import {
     checkToken,
     pagination,
     guardCheck,
+    roleGuard,
 } from '../middleware/index.middleware.js'
 
 export const companyRouter = Router()
@@ -22,15 +23,15 @@ companyRouter.get(
     checkToken,
     getAllCompanyJobsController,
 )
-companyRouter.get('/', checkToken, pagination, getAllCompanyController)
+companyRouter.get('/', checkToken, roleGuard('admin', 'superAdmin'), pagination, getAllCompanyController)
 companyRouter.get('/search', checkToken, pagination, searchCompanyController)
 companyRouter.get(
     '/:id',
     checkToken,
-    guardCheck('admin'),
+    guardCheck('admin', 'superAdmin'),
     getByIdCompanyController,
 )
 companyRouter.post('/', checkToken, createCompanyController)
-companyRouter.put('/:id', checkToken, updateIdCompanyController)
-companyRouter.delete('/:id', checkToken, deleteCompanyController)
+companyRouter.put('/:id', checkToken, guardCheck('admin', 'superAdmin'), updateIdCompanyController)
+companyRouter.delete('/:id', checkToken, guardCheck('admin', 'superAdmin'), deleteCompanyController)
 
